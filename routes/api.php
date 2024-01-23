@@ -1,19 +1,26 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CompanyController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
-*/
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::get('/categories', [CategoryController::class,'index']);
+Route::get('/category/{url}', [CategoryController::class,'show']);
+Route::put('/category/{url}', [CategoryController::class,'update']);
+Route::delete('/category/{url}', [CategoryController::class,'destroy']);
+Route::post('/category', [CategoryController::class,'store']);
+
+Route::get('/companies', [CompanyController::class,'index']);
+Route::post('/company', [CompanyController::class,'store']);
+Route::get('/company/{uuid}', [CompanyController::class,'show']);
+Route::put('/company/{uuid}', [CompanyController::class,'update']);
+Route::delete('/company/{uuid}', [CompanyController::class,'destroy']);
+Route::get('/company', [CompanyController::class,'search']);
+
+
+Route::get('/', function () {
+    return response()->json(['message' => 'success']);
 });
+
+
