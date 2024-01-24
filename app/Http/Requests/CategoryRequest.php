@@ -20,7 +20,12 @@ class CategoryRequest extends FormRequest
                 'max:150',
                 Rule::unique('categories', 'title')->ignore($url, 'url'),
             ],
-            'description' => ['required', 'string', 'min:3', 'max:255']
+            'description' => [
+                'required',
+                'string',
+                'min:3',
+                'max:255',
+                Rule::unique('categories', 'description')->ignore($url, 'url'),]
         ];
     }
 }

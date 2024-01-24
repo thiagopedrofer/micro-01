@@ -110,6 +110,4 @@ class CompanyController extends Controller
 
         return response()->json($companies);
     }
-
-
 }

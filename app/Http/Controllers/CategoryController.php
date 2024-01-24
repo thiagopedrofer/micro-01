@@ -4,27 +4,40 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
 
 class CategoryController extends Controller
 {
     public function index(): \Illuminate\Http\JsonResponse
     {
-        $categories = Category::query()->get();
+        try {
+            $categories = Category::query()->get();
 
-        return response()->json($categories);
+            if ($categories->isEmpty()) {
+                return response()->json(['error' => 'Nenhuma categoria encontrada'],Response::HTTP_BAD_REQUEST);
+            }
+
+            return response()->json($categories);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Tente Novamente'],Response::HTTP_BAD_REQUEST);
+        }
     }
 
     public function store(CategoryRequest $request): \Illuminate\Http\JsonResponse
     {
-        $category = new Category($request->validated());
-        $category['url'] = Str::slug($category['title']);
-        $category->save();
+        try {
+            $validatedData = $request->validated();
 
-        return response()->json($category);
+            $category = new Category($validatedData);
+            $category['url'] = Str::slug($validatedData['title']);
+            $category->save();
+
+            return response()->json($category,Response::HTTP_CREATED);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Tente Novamente!'],Response::HTTP_BAD_REQUEST);
+        }
     }
 
     public function show(string $url): \Illuminate\Http\JsonResponse
@@ -32,28 +45,46 @@ class CategoryController extends Controller
         try {
             $category = Category::query()->where('url', $url)->firstOrFail();
             return response()->json($category);
-        } catch (ModelNotFoundException) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'error' => "Categoria não encontrada, verifique a url: $url e tente novamente"],404);
+                'error' => "Categoria não encontrada, verifique a url: $url e tente novamente"], Response::HTTP_NOT_FOUND);
         }
     }
     public function update(CategoryRequest $request, string $url): \Illuminate\Http\JsonResponse
     {
-        $category = Category::query()->where('url', $url)->firstOrFail();
+        try {
 
-        $category->update($request->all());
+            $category = Category::query()->where('url', $url)->firstOrFail();
 
-        $category['url'] = Str::slug($category['title']);
-        $category->save();
+            if (!empty($category)) {
+                $category->update($request->validated());
+            }
 
-        return response()->json(['message' => 'Categoria editada com sucesso']);
+            $category['url'] = Str::slug($category['title']);
+            $category->save();
+
+            return response()->json(['message' => 'Categoria editada com sucesso']);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => "Categoria não encontrada, verifique a url: $url e tente novamente"], Response::HTTP_NOT_FOUND);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Tente Novamente!'], Response::HTTP_BAD_REQUEST);
+        }
     }
+
     public function destroy(string $url): \Illuminate\Http\JsonResponse
     {
-        $category = Category::query()->where('url', $url)->firstOrFail();
+        try {
+            $category = Category::query()->where('url', $url)->firstOrFail();
 
-        $category->delete();
+            if (!$category->delete()) {
+                return response()->json(['error' => 'Tente novamente'], Response::HTTP_BAD_REQUEST);
+            }
 
-        return response()->json([],'204');
+            return response()->json([], Response::HTTP_NO_CONTENT);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => "Categoria não encontrada, verifique a url: $url e tente novamente"], Response::HTTP_NOT_FOUND);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Tente novamente'], Response::HTTP_BAD_REQUEST);
+        }
     }
 }
