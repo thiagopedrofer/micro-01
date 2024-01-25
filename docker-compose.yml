@@ -12,8 +12,35 @@ services:
         working_dir: /var/www
         volumes:
             -   ./:/var/www
+        depends_on:
+            - redis
         networks:
             - microservices
+
+    redis:
+        image: redis:latest
+        networks:
+            - microservices
+
+    queue:
+        build:
+            args:
+                user: thiago
+                uid: 1000
+            context: ./
+            dockerfile: DockerFile
+        restart: unless-stopped
+        command:
+            - php
+            - artisan
+            - queue:work
+        volumes:
+            - ./:/var/www
+        depends_on:
+            - redis
+        networks:
+            - microservices
+
     nginx:
         image: nginx:alpine
         restart: unless-stopped

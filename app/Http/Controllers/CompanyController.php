@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CompanyRequest;
+use App\Jobs\CompanyCreatedJob;
 use App\Models\Company;
+use App\Services\CompanyService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -33,6 +35,8 @@ class CompanyController extends Controller
             'youtube' => $request->input('youtube')
         ]);
 
+        CompanyCreatedJob::dispatch(data_get($company,'email'));
+
         if (!empty($company->category)) {
             $company->category = $company->category;
         }
@@ -41,11 +45,21 @@ class CompanyController extends Controller
         return response()->json($company);
 
     }
-    public function show(string $uuid, Company $company): \Illuminate\Http\JsonResponse
+    public function show(string $uuid): \Illuminate\Http\JsonResponse
     {
         try {
             $company = Company::query()->where('uuid', $uuid)->with('category')->firstOrFail();
-            return response()->json($company);
+
+            $evaluation = (new CompanyService())->getCompany($uuid);
+
+            $result = [
+                'data' => [
+                    'company' => $company,
+                    'evaluation' => $evaluation
+                ]
+            ];
+
+            return response()->json($result);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'error' => "Empresa não encontrada, verifique o identificador: $uuid e tente novamente"
